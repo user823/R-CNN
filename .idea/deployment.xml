@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="hq@222.20.96.3:4397 (project level)" remoteFilesAllowedToDisappearOnAutoupload="false" confirmBeforeUploading="false">
     <option name="confirmBeforeUploading" value="false" />
     <serverData>
       <paths name="hq@222.20.96.3:4397 (project level)">
         <serverdata>
           <mappings>
-            <mapping deploy="/R_CNN" local="$PROJECT_DIR$" web="/" />
+            <mapping deploy="/R-CNN" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="hq@222.20.96.3:4397 password">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/mnt/data2/hq/R_CNN" local="$PROJECT_DIR$" />
           </mappings>
         </serverdata>
       </paths>

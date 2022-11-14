@@ -21,7 +21,7 @@ class CustomHardNegativeMiningDataset(Dataset):
         if self.transform:
             image = self.transform(image)
 
-        return image, target
+        return image, target, negative_dic
 
     def __len__(self):
         return len(self.negative_list)

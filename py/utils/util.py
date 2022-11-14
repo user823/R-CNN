@@ -11,7 +11,7 @@ def check_dir(data_dir):
 #获取汽车样例,读取到np数组中
 def parse_car_csv(csv_dir):
     csv_path = os.path.join(csv_dir, 'car.csv')
-    return np.loadtxt(csv_path, dtype=np.str)
+    return np.loadtxt(csv_path, dtype=np.str, delimiter=' ')   #必须以str读取数组，否则前面的0会被丢弃，无法定位图片
 
 #解析xml文件，返回汽车边界框坐标
 def parse_xml(xml_path):
@@ -22,17 +22,25 @@ def parse_xml(xml_path):
             xml+=line
     dic = xmltodict.parse(xml)
     bboxes = []
-    for object in dic[0]['object']:
-        if object['name'] == 'car' and object['difficult'] != 1:
-            bbox = object['bndbox']
+    objects = dic['annotation']['object']  #如果object是单个对象，则为字典类型；否则为列表类型
+    if isinstance(objects, dict):
+        if objects['name'] == 'car' and objects['difficult'] != '1':
+            bbox = objects['bndbox']
             bboxes.append((int(bbox['xmin']), int(bbox['ymin']), int(bbox['xmax']), int(bbox['ymax'])))
+    else:
+        for object in objects:
+            if object['name'] =='car' and object['difficult'] != '1':
+                bbox = object['bndbox']
+                bboxes.append((int(bbox['xmin']), int(bbox['ymin']), int(bbox['xmax']), int(bbox['ymax'])))
     return bboxes
 
 #给定两个边界框计算IOU
 #pred_box大小为[4], target_box大小为[N,4]
 #返回[1,N]数组
 def iou(pred_box, target_box):
-    if len(target_box == 1):
+    target_box = np.array(target_box)
+    if len(target_box.shape) == 1:
+        target_box = np.array([target_box]) #先变成2维数组
         target_box = target_box.reshape((-1, 4))
 
     xmin = np.maximum(pred_box[0], target_box[:, 0])
@@ -59,10 +67,10 @@ def compute_ious(rects, bndboxes):
         score_list.append(max(scores))
     return score_list
 
-#把训练好的模型放在./models/model_path下面
+#把训练好的模型放在R_CNN/models/model_path下面
+#model既可以指结构又可以指数据
 def save_model(model, model_save_path):
-    check_dir('./models')
-    torch.save(model.state_dict(), model_save_path)
+    torch.save(model, model_save_path)
 
 #绘制loss曲线
 def plot_loss(loss_list):
@@ -73,6 +81,18 @@ def plot_loss(loss_list):
     ax.set_title('loss curve')
     plt.savefig('loss curve.png')
 
+#更改目录下的文件名
+def rename(root_dir, postfix):
+    src_files = os.listdir(root_dir)
+    dst_files = [file.split(postfix)[0] + '.' + postfix for file in src_files]
+    for i in range(len(src_files)):
+        os.rename(root_dir + '/' + src_files[i], root_dir + '/' + dst_files[i])
 
 if __name__ == '__main__':
+    # xml_path = '../../data/voc_car/train/Annotations/000012.xml'
+    # print(parse_xml(xml_path))
+    # a = np.array([150, 100, 351, 270])
+    # b = np.array([[156, 97, 351, 270]])
+    # print(b[:,1])
+    # iou(a, b)
     pass

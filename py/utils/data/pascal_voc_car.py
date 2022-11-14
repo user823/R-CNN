@@ -27,7 +27,9 @@ def parse_train_val(data_path):
         lines = f.readlines()
         for line in lines:
             res = line.strip().split(' ')
-            if len(res[0])==3 and int(res[1])==1:
+            #每一行：image_id, 标识(-1,0,1) 由于-1占两个格子，因此0 和 1前面会补空格分割后len(res)=3
+            #-1标识这个图片中没有目标物体，0标识物体只露出了一部分
+            if len(res) == 3 and int(res[2]) == 1:
                 samples.append(res[0])
     return np.array(samples)
 

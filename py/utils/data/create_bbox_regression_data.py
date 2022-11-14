@@ -15,11 +15,11 @@ if __name__ == '__main__':
     gt_annotation_dir = os.path.join(voc_car_train_dir, 'Annotations')  #xml文件封装
     jpeg_dir = os.path.join(voc_car_train_dir, 'JPEGImages')
 
-    classifier_car_train_dir = '../../../data/fineturn_car/train'
+    classifier_car_train_dir = '../../../data/finetune_car/train'
     positive_annotation_dir = os.path.join(classifier_car_train_dir, 'Annotations')
 
     dst_root_dir = '../../../data/bbox_regression'
-    dst_jpeg_dir = os.path.join(dst_root_dir, 'JPEGImaegs')
+    dst_jpeg_dir = os.path.join(dst_root_dir, 'JPEGImages')
     dst_bndbox_dir = os.path.join(dst_root_dir, 'bndboxs')    #所有gt
     dst_positive_dir = os.path.join(dst_root_dir, 'positive') #所有iou>0.6
 
@@ -32,23 +32,26 @@ if __name__ == '__main__':
     saved_sample = []
     total_positive_num = 0
     for sample in tqdm.tqdm(samples):
-        annotation_path = os.path.join(voc_car_train_dir, sample + '.xml')
+        annotation_path = os.path.join(gt_annotation_dir, sample + '.xml')
         bnds = utl.parse_xml(annotation_path)
 
         positive_annotation_path = os.path.join(positive_annotation_dir, sample + '_1.csv')
-        positive_bnds = np.loadtxt(positive_annotation_path, dtype=int, delimiter=' ')
+        positive_bnds = np.loadtxt(positive_annotation_path, dtype=np.int64, delimiter=' ')
 
         positive_list = []
         #搜索iou>0.6的微调数据集预测框
+        #处理单行单情况
+        if len(positive_bnds.shape) == 1:
+            positive_bnds = np.array([positive_bnds])
         for positive_bnd in positive_bnds:
-            iou = utl.compute_ious(positive_bnd, bnds)
-            if iou > 0.6:
+            ious = utl.iou(positive_bnd, bnds)
+            if max(ious) > 0.6:
                 positive_list.append(positive_bnd)
 
         if len(positive_list) > 0:
             # 搬运图片
             src_jpeg_path = os.path.join(jpeg_dir, sample + '.jpg')
-            dst_jpeg_path = os.path.join(dst_jpeg_dir, sample + 'jpg')
+            dst_jpeg_path = os.path.join(dst_jpeg_dir, sample + '.jpg')
             shutil.copy(src_jpeg_path, dst_jpeg_path)
 
             dst_bndbox_path = os.path.join(dst_bndbox_dir, sample + '.csv')
@@ -62,5 +65,5 @@ if __name__ == '__main__':
 
     print('{} images has been saved'.format(total_positive_num))
     dst_car_csv_path = os.path.join(dst_root_dir, 'car.csv')
-    np.savetxt(dst_car_csv_path, np.array(saved_sample), fmt='%d', delimiter=' ')
+    np.savetxt(dst_car_csv_path, np.array(saved_sample), fmt='%s', delimiter=' ')
 

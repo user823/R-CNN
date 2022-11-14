@@ -11,7 +11,7 @@ class CustomBatchSampler(Sampler):
     #每次批处理，num_positive:正样本数 num_negative:负样本数目
     #batch_positive:单次正样本数目, batch_negative:单次负样本数目
     def __init__(self,num_positive, num_negative, batch_positive, batch_negative):
-        super().__init__()
+        super().__init__(None)
         self.num_positive = num_positive
         self.num_negative = num_negative
         self.batch_positive = batch_positive

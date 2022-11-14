@@ -26,10 +26,12 @@ class CustomClassifierDataset(Dataset):
         for index in range(len(samples)):
             sample = samples[index]
             #读取图片
-            images.append(cv.imread(img_root_dir, sample + '.jpg'))
+            images.append(cv.imread(os.path.join(img_root_dir, sample + '.jpg')))
 
             #读取正例
-            rects = np.loadtxt(os.path.join(annotation_root_dir, sample + '_1.csv'), dtype=np.int, delimiter=' ')
+            rects = np.loadtxt(os.path.join(annotation_root_dir, sample + '_1.csv'), dtype=np.int64, delimiter=' ')
+            if  len(rects.shape) == 1:
+                rects = np.array([rects])
             for rect in rects:
                 positivedic = {}
                 positivedic['rect'] = rect
@@ -37,17 +39,19 @@ class CustomClassifierDataset(Dataset):
                 positive_list.append(positivedic)
 
             #读取负例
-            rects = np.loadtxt(os.path.join(annotation_root_dir, sample + '_0.csv'), dtype=np.int, delimiter=' ')
+            rects = np.loadtxt(os.path.join(annotation_root_dir, sample + '_0.csv'), dtype=np.int64, delimiter=' ')
+            if  len(rects.shape) == 1:
+                rects = np.array([rects])
             for rect in rects:
                 negativedic = {}
                 negativedic['rect'] = rect
                 negativedic['image_id'] = index
                 negative_list.append(negativedic)
 
-            self.positive_list = positive_list
-            self.negative_list = negative_list
-            self.transform = transform
-            self.images = images
+        self.positive_list = positive_list
+        self.negative_list = negative_list
+        self.transform = transform
+        self.images = images
 
 
     def __len__(self):
@@ -88,3 +92,12 @@ class CustomClassifierDataset(Dataset):
 
     def get_jpeg_images(self):
         return self.images
+
+    def set_negative_list(self, negative_list):
+        self.negative_list = negative_list
+
+if __name__ == '__main__':
+    dataset = CustomClassifierDataset('../../../data/classifier_car/train/')
+    data_loader = DataLoader(dataset)
+    for image, target, dic in data_loader:
+        pass

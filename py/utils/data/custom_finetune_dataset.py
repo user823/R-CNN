@@ -22,14 +22,19 @@ class CustomFinetuneDataset(Dataset):
         for idx in range(len(samples)):
             sample = samples[idx]
             jpeg_images.append(cv.imread(os.path.join(root_dir, 'JPEGImages', sample + '.jpg')))
-            bnds = np.loadtxt(os.path.join(root_dir, 'Annotations', sample + '_1.csv'), dtype=np.int, delimiter=' ')
+            bnds = np.loadtxt(os.path.join(root_dir, 'Annotations', sample + '_1.csv'), dtype=np.int64, delimiter=' ')
+            #如果只有一行的话bnds，用for遍历bnds将得到四个值
+            if len(bnds.shape) == 1:
+                bnds = np.array([bnds])
             for bnd in bnds:
                 positivedic = {}
                 positivedic['rect'] = bnd
                 positivedic['image_id'] = idx
                 positive_rects.append(positivedic)
 
-            bnds = np.loadtxt(os.path.join(root_dir, 'Annotations', sample + '_0.csv'), dtype=np.int, delimiter=' ')
+            bnds = np.loadtxt(os.path.join(root_dir, 'Annotations', sample + '_0.csv'), dtype=np.int64, delimiter=' ')
+            if len(bnds.shape) == 1:
+                bnds = np.array([bnds])
             for bnd in bnds:
                 negativedic = {}
                 negativedic['rect'] = bnd
@@ -67,3 +72,9 @@ class CustomFinetuneDataset(Dataset):
     def get_negative_num(self):
         return len(self.negative_rects)
 
+
+if __name__ == '__main__':
+    dataset = CustomFinetuneDataset('../../../data/finetune_car/train')
+    data_loader = DataLoader(dataset)
+    for inputs, target in data_loader:
+        pass

@@ -1,4 +1,3 @@
-import time
 import shutil
 import numpy as np
 import cv2 as cv
@@ -18,8 +17,11 @@ def parse_annotation_jpeg(annotation_path, jpeg_path, gs):
     img = cv.imread(jpeg_path)
     py.ss.config(gs, img)       #使用质量模式生成候选框
     rects = py.ss.get_rects(gs)
+    rects = np.array(rects)
 
     bnds = utl.parse_xml(annotation_path)
+    bnds = np.array(bnds)
+    # print(bnds)     #[[156  97 351 270]]
 
     maximum_box_size = 0        #找到最大标注框
     for bnd in bnds:
@@ -28,9 +30,11 @@ def parse_annotation_jpeg(annotation_path, jpeg_path, gs):
         if rect_size > maximum_box_size:
             maximum_box_size = rect_size
 
-    for rect in rects:
+    iou_list = utl.compute_ious(rects, bnds)
+    for idx in range(len(rects)):
+        rect = rects[idx]
+        iou = iou_list[idx]
         xmin, xmax, ymin, ymax = rect
-        iou = utl.compute_ious(rect, bnds)
         if iou > 0.5:
             positive_list.append(rect)
         elif iou > 0:
@@ -47,40 +51,40 @@ if __name__ == '__main__':
 
     gs = py.ss.get_selective_search()
 
-    for name in ['train', 'val']:
-        src_car_csv = os.path.join(car_root_dir, 'car.csv')         #训练集和验证集都有自己的csv文件
-        dst_car_csv = os.path.join(dst_root_dir, 'car.csv')
-        shutil.copy(src_car_csv, dst_car_csv)                       #直接搬运voc_car的csv文件
-        samples = utl.parse_car_csv(dst_car_csv)
+    for name in ['train','val']:
+        dst_root_dir_name = os.path.join(dst_root_dir, name)
+        src_annotation_dir = os.path.join(car_root_dir, name, 'Annotations')
+        src_jpeg_dir = os.path.join(car_root_dir, name, 'JPEGImages')
+        dst_annotation_dir = os.path.join(dst_root_dir_name, 'Annotations')
+        dst_jpeg_dir = os.path.join(dst_root_dir_name, 'JPEGImages')
 
-        dst_root_dir = os.path.join(dst_root_dir, name)
-        src_annotation_dir = os.path.join(car_root_dir, name + '/Annotations')
-        src_jpeg_dir = os.path.join(car_root_dir, '/JPEGImages')
-        dst_annotation_dir = os.path.join(dst_root_dir, '/Annotations')
-        dst_jpeg_dir = os.path.join(dst_root_dir, '/JPEGImages')
-
-        utl.check_dir(dst_root_dir)
+        utl.check_dir(dst_root_dir_name)
         utl.check_dir(dst_annotation_dir)
         utl.check_dir(dst_jpeg_dir)
+
+        src_car_csv = os.path.join(car_root_dir, name, 'car.csv')         #训练集和验证集都有自己的csv文件
+        dst_car_csv = os.path.join(dst_root_dir_name, 'car.csv')
+        shutil.copy(src_car_csv, dst_car_csv)                             #直接搬运voc_car的csv文件
+        samples = utl.parse_car_csv(dst_root_dir_name)
 
         total_positive = 0
         total_negative = 0
 
         for sample in tqdm.tqdm(samples):
-            annotation_path = os.path.join(src_annotation_dir, sample + '.xml')
-            jpeg_path = os.path.join(src_jpeg_dir, sample + '.jpg')
+            annotation_path = os.path.join(src_annotation_dir, str(sample) + '.xml')
+            jpeg_path = os.path.join(src_jpeg_dir, str(sample) + '.jpg')
             positive_list, negative_list = parse_annotation_jpeg(annotation_path, jpeg_path, gs)
             total_positive += len(positive_list)
             total_negative += len(negative_list)
 
             #保存标注
             positive_annotation_path = os.path.join(dst_annotation_dir, sample + '_1' + '.csv')
-            negative_annotation_path = os.path.join(dst_annotation_dir, sample + '_0' + 'csv')
+            negative_annotation_path = os.path.join(dst_annotation_dir, sample + '_0' + '.csv')
             np.savetxt(positive_annotation_path, np.array(positive_list), fmt='%s', delimiter=' ')
             np.savetxt(negative_annotation_path, np.array(negative_list), fmt='%s', delimiter=' ')
 
             #搬运图片
-            shutil.copy(jpeg_path, os.path.join(dst_jpeg_dir, sample + '.jpg'))
+            shutil.copy(jpeg_path, os.path.join(dst_jpeg_dir, str(sample) + '.jpg'))
 
         print('total_positive: {} in {}'.format(total_positive, name))
         print('total_negative: {} in {}'.format(total_negative, name))
